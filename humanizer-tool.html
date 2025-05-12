@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Content Humanizer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .text-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    textarea {
+      height: 300px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+      resize: none;
+      background-color: white;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 10px 0;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .settings {
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .slider-container {
+      margin-bottom: 15px;
+    }
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .copy-button {
+      background-color: #2ecc71;
+    }
+    .copy-button:hover {
+      background-color: #27ae60;
+    }
+    .preset-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .preset-button {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+    footer {
+      margin-top: 30px;
+      text-align: center;
+      color: #7f8c8d;
+      font-size: 14px;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      margin-left: 5px;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: #555;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 14px;
+      font-weight: normal;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Content Humanizer</h1>
+  
+  <div class="settings">
+    <h2>Humanizing Settings</h2>
+    
+    <div class="preset-buttons">
+      <button class="preset-button" onclick="applyPreset('casual')">Casual</button>
+      <button class="preset-button" onclick="applyPreset('professional')">Professional</button>
+      <button class="preset-button" onclick="applyPreset('creative')">Creative</button>
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>Informality Level <div class="tooltip">?<span class="tooltiptext">Higher values add more contractions and casual phrases</span></div></span>
+        <span id="informalityValue">5</span>
+      </div>
+      <input type="range" min="1" max="10" value="5" id="informalitySlider" oninput="updateSliderValue(this, 'informalityValue')">
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>Sentence Variety <div class="tooltip">?<span class="tooltiptext">Higher values create more varied sentence lengths and structures</span></div></span>
+        <span id="sentenceVarietyValue">5</span>
+      </div>
+      <input type="range" min="1" max="10" value="5" id="sentenceVarietySlider" oninput="updateSliderValue(this, 'sentenceVarietyValue')">
+    </div>
+    
+    <div class="slider-container">
+      <div class="slider-label">
+        <span>Personality <div class="tooltip">?<span class="tooltiptext">Higher values add more filler words and personal expressions</span></div></span>
+        <span id="personalityValue">5</span>
+      </div>
+      <input type="range" min="1" max="10" value="5" id="personalitySlider" oninput="updateSliderValue(this, 'personalityValue')">
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="text-area">
+      <label for="inputText">AI Generated Content:</label>
+      <textarea id="inputText" placeholder="Paste your AI-generated content here..."></textarea>
+    </div>
+    
+    <div class="text-area">
+      <label for="outputText">Humanized Content:</label>
+      <textarea id="outputText" placeholder="Your humanized content will appear here..." readonly></textarea>
+    </div>
+  </div>
+  
+  <div style="text-align: center;">
+    <button onclick="humanizeText()">Humanize Content</button>
+    <button class="copy-button" onclick="copyToClipboard()">Copy Humanized Text</button>
+  </div>
+  
+  <footer>
+    <p>AI Content Humanizer - Free Tool</p>
+  </footer>
+
+  <script>
+    // Update slider value display
+    function updateSliderValue(slider, valueId) {
+      document.getElementById(valueId).textContent = slider.value;
+    }
+    
+    // Apply preset values
+    function applyPreset(preset) {
+      if (preset === 'casual') {
+        document.getElementById('informalitySlider').value = 8;
+        document.getElementById('sentenceVarietySlider').value = 6;
+        document.getElementById('personalitySlider').value = 7;
+      } else if (preset === 'professional') {
+        document.getElementById('informalitySlider').value = 3;
+        document.getElementById('sentenceVarietySlider').value = 5;
+        document.getElementById('personalitySlider').value = 2;
+      } else if (preset === 'creative') {
+        document.getElementById('informalitySlider').value = 6;
+        document.getElementById('sentenceVarietySlider').value = 9;
+        document.getElementById('personalitySlider').value = 8;
+      }
+      
+      // Update displayed values
+      updateSliderValue(document.getElementById('informalitySlider'), 'informalityValue');
+      updateSliderValue(document.getElementById('sentenceVarietySlider'), 'sentenceVarietyValue');
+      updateSliderValue(document.getElementById('personalitySlider'), 'personalityValue');
+    }
+    
+    // Copy humanized text to clipboard
+    function copyToClipboard() {
+      const outputText = document.getElementById('outputText');
+      outputText.select();
+      document.execCommand('copy');
+      alert('Humanized text copied to clipboard!');
+    }
+    
+    // The main humanizing function
+    function humanizeText() {
+      const inputText = document.getElementById('inputText').value;
+      if (!inputText.trim()) {
+        alert('Please enter some text to humanize!');
+        return;
+      }
+      
+      // Get current settings
+      const informalityLevel = parseInt(document.getElementById('informalitySlider').value);
+      const sentenceVariety = parseInt(document.getElementById('sentenceVarietySlider').value);
+      const personalityLevel = parseInt(document.getElementById('personalitySlider').value);
+      
+      // Start the transformation process
+      let humanizedText = inputText;
+      
+      // 1. Split text into sentences
+      const sentences = splitIntoSentences(humanizedText);
+      
+      // 2. Process each sentence based on settings
+      const processedSentences = sentences.map((sentence, index) => {
+        let processed = sentence;
+        
+        // Apply informality transformations
+        if (informalityLevel > 0) {
+          processed = addInformality(processed, informalityLevel);
+        }
+        
+        // Add personality markers based on personality level
+        if (personalityLevel > 0) {
+          processed = addPersonality(processed, personalityLevel, index);
+        }
+        
+        return processed;
+      });
+      
+      // 3. Combine sentences with variety in structure based on sentenceVariety setting
+      humanizedText = combineSentences(processedSentences, sentenceVariety);
+      
+      // Display the humanized text
+      document.getElementById('outputText').value = humanizedText;
+    }
+    
+    // Split text into sentences
+    function splitIntoSentences(text) {
+      // Basic sentence splitting (this could be improved with more sophisticated regex)
+      return text.match(/[^.!?]+[.!?]+/g) || [text];
+    }
+    
+    // Add informality based on level
+    function addInformality(sentence, level) {
+      let result = sentence;
+      
+      // Common contractions and their formal equivalents
+      const contractions = [
+        { formal: 'it is', informal: "it's" },
+        { formal: 'I am', informal: "I'm" },
+        { formal: 'you are', informal: "you're" },
+        { formal: 'they are', informal: "they're" },
+        { formal: 'we are', informal: "we're" },
+        { formal: 'do not', informal: "don't" },
+        { formal: 'does not', informal: "doesn't" },
+        { formal: 'did not', informal: "didn't" },
+        { formal: 'is not', informal: "isn't" },
+        { formal: 'are not', informal: "aren't" },
+        { formal: 'was not', informal: "wasn't" },
+        { formal: 'were not', informal: "weren't" },
+        { formal: 'cannot', informal: "can't" },
+        { formal: 'could not', informal: "couldn't" },
+        { formal: 'would not', informal: "wouldn't" },
+        { formal: 'should not', informal: "shouldn't" },
+        { formal: 'will not', informal: "won't" },
+        { formal: 'have not', informal: "haven't" },
+        { formal: 'has not', informal: "hasn't" },
+        { formal: 'had not', informal: "hadn't" },
+        { formal: 'I will', informal: "I'll" },
+        { formal: 'you will', informal: "you'll" },
+        { formal: 'he will', informal: "he'll" },
+        { formal: 'she will', informal: "she'll" },
+        { formal: 'we will', informal: "we'll" },
+        { formal: 'they will', informal: "they'll" },
+        { formal: 'I would', informal: "I'd" },
+        { formal: 'you would', informal: "you'd" },
+        { formal: 'he would', informal: "he'd" },
+        { formal: 'she would', informal: "she'd" },
+        { formal: 'we would', informal: "we'd" },
+        { formal: 'they would', informal: "they'd" },
+        { formal: 'I have', informal: "I've" },
+        { formal: 'you have', informal: "you've" },
+        { formal: 'we have', informal: "we've" },
+        { formal: 'they have', informal: "they've" }
+      ];
+      
+      // Apply contractions based on informality level
+      const contractionProbability = level / 10;
+      contractions.forEach(pair => {
+        // Case insensitive replacement with probability based on level
+        const regex = new RegExp(pair.formal, 'gi');
+        result = result.replace(regex, match => {
+          return Math.random() < contractionProbability ? pair.informal : match;
+        });
+      });
+      
+      // Replace formal words with more casual alternatives based on level
+      if (level >= 5) {
+        const wordReplacements = [
+          { formal: 'utilize', informal: 'use' },
+          { formal: 'obtain', informal: 'get' },
+          { formal: 'purchase', informal: 'buy' },
+          { formal: 'require', informal: 'need' },
+          { formal: 'sufficient', informal: 'enough' },
+          { formal: 'numerous', informal: 'many' },
+          { formal: 'assistance', informal: 'help' },
+          { formal: 'inquire', informal: 'ask' },
+          { formal: 'commence', informal: 'start' },
+          { formal: 'terminate', informal: 'end' },
+          { formal: 'subsequently', informal: 'later' },
+          { formal: 'additionally', informal: 'also' },
+          { formal: 'however', informal: 'but' },
+          { formal: 'therefore', informal: 'so' },
+          { formal: 'consequently', informal: 'so' },
+          { formal: 'furthermore', informal: 'also' },
+          { formal: 'presently', informal: 'now' },
+          { formal: 'attempt', informal: 'try' },
+          { formal: 'due to the fact that', informal: 'because' },
+          { formal: 'in order to', informal: 'to' },
+          { formal: 'in the event that', informal: 'if' },
+          { formal: 'for the purpose of', informal: 'for' },
+          { formal: 'in spite of the fact that', informal: 'although' },
+          { formal: 'with regard to', informal: 'about' }
+        ];
+        
+        wordReplacements.forEach(pair => {
+          const regex = new RegExp('\\b' + pair.formal + '\\b', 'gi');
+          result = result.replace(regex, pair.informal);
+        });
+      }
+      
+      // For very high informality, add some casual phrases at the start
+      if (level >= 7 && Math.random() < 0.2) {
+        const casualStarters = [
+          "Look, ",
+          "Well, ",
+          "So, ",
+          "Honestly, ",
+          "Basically, ",
+          "Actually, ",
+          "I mean, ",
+          "You know, "
+        ];
+        const randomStarter = casualStarters[Math.floor(Math.random() * casualStarters.length)];
+        // Only add if the sentence doesn't already start with one of these
+        if (!casualStarters.some(starter => result.trim().startsWith(starter))) {
+          result = randomStarter + result.charAt(0).toLowerCase() + result.slice(1);
+        }
+      }
+      
+      return result;
+    }
+    
+    // Add personality based on level
+    function addPersonality(sentence, level, index) {
+      if (sentence.length < 3) return sentence; // Skip very short sentences
+      
+      let result = sentence;
+      
+      // Chance of adding a filler word increases with personality level
+      const fillerProbability = (level / 10) * 0.3; // Max 30% chance at level 10
+      
+      // Only add filler words occasionally
+      if (Math.random() < fillerProbability) {
+        const fillerWords = [
+          { word: " actually", position: "end" },
+          { word: " you know", position: "end" },
+          { word: " I think", position: "end" },
+          { word: " honestly", position: "end" },
+          { word: " seriously", position: "end" },
+          { word: " basically", position: "start" },
+          { word: "Actually, ", position: "start" },
+          { word: "Honestly, ", position: "start" },
+          { word: "In my opinion, ", position: "start" },
+          { word: "I believe ", position: "start" },
+          { word: "Look, ", position: "start" },
+          { word: "I mean, ", position: "start" }
+        ];
+        
+        // Select a random filler word
+        const filler = fillerWords[Math.floor(Math.random() * fillerWords.length)];
+        
+        // Add the filler word at the appropriate position
+        if (filler.position === "end" && !result.trim().endsWith(",")) {
+          result = result.trim().replace(/[.!?]$/, "," + filler.word + ".");
+        } else if (filler.position === "start") {
+          // Make sure we don't start with a lowercase letter after adding the prefix
+          result = filler.word + result.charAt(0).toLowerCase() + result.slice(1);
+        }
+      }
+      
+      // For higher personality levels, occasionally add emphasis
+      if (level >= 6 && Math.random() < 0.15) {
+        const emphasisPatterns = [
+          { regex: /\b(good|great|nice|bad|important|interesting)\b/gi, replacement: "really $1" },
+          { regex: /\b(love|hate|enjoy|dislike)\b/gi, replacement: "really $1" },
+          { regex: /\./g, replacement: "!" }
+        ];
+        
+        // Apply a random emphasis pattern
+        const pattern = emphasisPatterns[Math.floor(Math.random() * emphasisPatterns.length)];
+        // Only apply once to avoid over-emphasis
+        result = result.replace(pattern.regex, pattern.replacement);
+      }
+      
+      return result;
+    }
+    
+    // Combine sentences with variety in structure
+    function combineSentences(sentences, varietyLevel) {
+      if (sentences.length <= 1) return sentences.join(" ");
+      
+      let result = [];
+      let i = 0;
+      
+      while (i < sentences.length) {
+        // Higher variety level increases chance of combining sentences
+        const combineProb = (varietyLevel / 10) * 0.7; // Max 70% chance at level 10
+        
+        // Check if we should combine this sentence with the next one
+        if (i < sentences.length - 1 && Math.random() < combineProb) {
+          const combiners = [
+            " and ",
+            " but ",
+            " yet ",
+            " while ",
+            " although ",
+            ", as ",
+            ", since ",
+            ", which ",
+            " because "
+          ];
+          
+          const randomCombiner = combiners[Math.floor(Math.random() * combiners.length)];
+          
+          // Combine current and next sentence
+          let combinedSentence = sentences[i].trim().replace(/[.!?]$/, "");
+          let nextSentence = sentences[i+1].trim();
+          
+          // Make sure the first letter of the second sentence is lowercase when appropriate
+          if (randomCombiner.includes(",")) {
+            nextSentence = nextSentence.charAt(0).toLowerCase() + nextSentence.slice(1);
+          }
+          
+          combinedSentence += randomCombiner + nextSentence;
+          result.push(combinedSentence);
+          i += 2; // Skip the next sentence since we combined it
+        } else {
+          // Just add this sentence normally
+          result.push(sentences[i]);
+          i++;
+        }
+      }
+      
+      // For very high variety, occasionally break a longer sentence into two
+      if (varietyLevel >= 8 && result.length >= 3) {
+        for (let i = 0; i < result.length; i++) {
+          const sentence = result[i];
+          if (sentence.length > 100 && sentence.includes(",") && Math.random() < 0.3) {
+            const parts = sentence.split(",");
+            if (parts.length >= 2) {
+              const breakPoint = Math.floor(parts.length / 2);
+              const firstHalf = parts.slice(0, breakPoint).join(",") + ".";
+              const secondHalf = parts.slice(breakPoint).join(",");
+              // Capitalize first letter of second half
+              const capitalizedSecondHalf = secondHalf.charAt(0).toUpperCase() + secondHalf.slice(1);
+              
+              // Replace the original sentence with two sentences
+              result.splice(i, 1, firstHalf, capitalizedSecondHalf);
+              i++; // Skip the newly inserted sentence
+            }
+          }
+        }
+      }
+      
+      return result.join(" ");
+    }
+  </script>
+</body>
+</html>
